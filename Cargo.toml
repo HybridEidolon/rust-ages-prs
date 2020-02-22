@@ -1,0 +1,16 @@
+[package]
+name = "sega-prs"
+description = "Compression and decompression of PRS, SEGA's LZ77 encoding."
+version = "0.1.0"
+authors = ["Eidolon <furyhunter600@gmail.com>"]
+edition = "2018"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/HybridEidolon/rust-sega-prs"
+categories = ["compression"]
+
+[dependencies]
+libflate_lz77 = "0.1"
+
+[patch.crates-io.libflate_lz77]
+git = "https://github.com/HybridEidolon/libflate"
+branch = "lz77-configure-max-length"
