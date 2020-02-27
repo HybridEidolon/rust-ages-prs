@@ -2,95 +2,16 @@
 
 use crate::Variant;
 
-use std::error::Error;
-use std::fmt;
-use std::io::{Read, Cursor};
+use std::collections::VecDeque;
+use std::io::{self, Cursor, Read, Write};
 
-/// An Error returned during decompression.
-#[derive(Debug)]
-pub enum DecompressError {
-    /// Reached end of buffer prematurely
-    Eof,
-    /// A Pointer command was invalid (not enough written bytes)
-    InvalidPointer {
-        /// The distance backwards in the output buffer to copy from
-        dist: usize,
-        /// The number of bytes to copy
-        len: usize,
-        /// The current length of the output buffer
-        current_len: usize,
-    },
-    #[doc(hidden)]
-    __Nonexhaustive,
-}
-
-impl fmt::Display for DecompressError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            DecompressError::Eof => {
-                write!(f, "Reached end of buffer prematurely")
-            },
-            DecompressError::InvalidPointer { dist, len, current_len } => {
-                write!(
-                    f,
-                    "Invalid pointer command: {} bytes {} away, {} available",
-                    len,
-                    dist,
-                    current_len
-                )
-            },
-            _ => unimplemented!()
-        }
-    }
-}
-
-impl Error for DecompressError {}
-
-/// Decompress a byte buffer, as a particular Variant.
-pub fn decompress<V, B>(buf: B) -> Result<Vec<u8>, DecompressError>
-where
-    V: Variant,
-    B: AsRef<[u8]>,
-{
-    decompress_buf::<V>(buf.as_ref())
-}
-
-fn decompress_buf<V: Variant>(buf: &[u8]) -> Result<Vec<u8>, DecompressError> {
-    if buf.is_empty() {
-        // empty buffer; return empty result
-        return Ok(Vec::new());
-    }
-
-    let mut ctx: Ctx<V> = Ctx::new(buf);
-
-    let mut out = Vec::with_capacity(buf.len().next_power_of_two());
-
-    loop {
-        let cmd = ctx.next_cmd()?;
-        match cmd {
-            Some(Cmd::Literal(b)) => out.push(b),
-            Some(Cmd::Pointer(dist, len)) => {
-                for _ in 0..len {
-                    if dist == 0 || out.len() < dist {
-                        return Err(DecompressError::InvalidPointer {
-                            dist,
-                            len,
-                            current_len: out.len(),
-                        });
-                    }
-                    out.push(out[out.len()-dist]);
-                }
-            },
-            None => break
-        }
-    }
-    Ok(out)
-}
-
-struct Ctx<'a, V> {
-    cursor: Cursor<&'a [u8]>,
+/// An IO source for decoding a PRS stream.
+pub struct PrsDecoder<R: Read, V: Variant> {
+    inner: R,
     cmds: u8,
     rem: u8,
+    copy_buf: VecDeque<u8>,
+    eof: bool,
     pd: std::marker::PhantomData<V>,
 }
 
@@ -101,23 +22,22 @@ enum Cmd {
     Pointer(usize, usize),
 }
 
-impl<'a, V> Ctx<'a, V> {
-    fn new(src: &'a [u8]) -> Ctx<'a, V> {
-        Ctx {
-            cursor: Cursor::new(src),
+impl<R: Read, V: Variant> PrsDecoder<R, V> {
+    pub fn new(inner: R) -> PrsDecoder<R, V> {
+        PrsDecoder {
+            inner,
             cmds: 0,
             rem: 0,
+            copy_buf: VecDeque::with_capacity(8191),
+            eof: false,
             pd: std::marker::PhantomData,
         }
     }
 
-    #[inline(always)]
-    fn read_bit(&mut self) -> Result<bool, DecompressError> {
+    fn read_bit(&mut self) -> io::Result<bool> {
         if self.rem == 0 {
             let mut buf = [0; 1];
-            if self.cursor.read_exact(&mut buf).is_err() {
-                return Err(DecompressError::Eof);
-            }
+            self.inner.read_exact(&mut buf)?;
             self.cmds = buf[0];
             self.rem = 8;
         }
@@ -128,26 +48,20 @@ impl<'a, V> Ctx<'a, V> {
 
         match ret { 0 => Ok(false), _ => Ok(true) }
     }
-}
 
-impl<'a, V> Ctx<'a, V> where V: Variant {
-    fn next_cmd(&mut self) -> Result<Option<Cmd>, DecompressError> {
+    fn next_cmd(&mut self) -> io::Result<Option<Cmd>> {
         if self.read_bit()? {
             // literal
             let mut buf = [0; 1];
-            if self.cursor.read_exact(&mut buf).is_err() {
-                return Err(DecompressError::Eof);
-            }
+            self.inner.read_exact(&mut buf)?;
             return Ok(Some(Cmd::Literal(buf[0])));
         }
 
         if self.read_bit()? {
             // long ptr
             let mut buf = [0; 2];
-            let mut offset = match self.cursor.read_exact(&mut buf) {
-                Err(_) => return Err(DecompressError::Eof),
-                _ => i16::from_le_bytes(buf) as i32,
-            };
+            self.inner.read_exact(&mut buf)?;
+            let mut offset = i16::from_le_bytes(buf) as i32;
 
             if offset == 0 {
                 return Ok(None);
@@ -158,10 +72,8 @@ impl<'a, V> Ctx<'a, V> where V: Variant {
 
             if size == 0 {
                 // next byte is real size
-                size = match self.cursor.read_exact(&mut buf[..1]) {
-                    Err(_) => return Err(DecompressError::Eof),
-                    _ => buf[0] as usize,
-                };
+                self.inner.read_exact(&mut buf[..1])?;
+                size = buf[0] as usize;
                 // it's probably the minimum long-long-copy size
                 size += V::MIN_LONG_COPY_LENGTH as usize;
             } else {
@@ -176,13 +88,46 @@ impl<'a, V> Ctx<'a, V> where V: Variant {
             let flag = if self.read_bit()? { 1 } else { 0 };
             let bit = if self.read_bit()? { 1 } else { 0 };
             let size = (bit | (flag << 1)) + 2;
-            let offset = match self.cursor.read_exact(&mut buf) {
-                Err(_) => return Err(DecompressError::Eof),
-                _ => buf[0] as i32,
-            };
+            self.inner.read_exact(&mut buf)?;
+            let offset = buf[0] as i32;
             let offset = offset | -256i32;
             
             Ok(Some(Cmd::Pointer((-offset) as usize, size)))
         }
+    }
+}
+
+impl<R: Read, V: Variant> Read for PrsDecoder<R, V> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        // first, fill the copy buffer as much as possible
+        while self.copy_buf.len() < 8191 + buf.len() && !self.eof {
+            match self.next_cmd()? {
+                None => {
+                    self.eof = true;
+                    break;
+                },
+                Some(Cmd::Literal(b)) => {
+                    self.copy_buf.push_back(b);
+                },
+                Some(Cmd::Pointer(offset, size)) => {
+                    for _ in 0..size {
+                        if offset == 0 || self.copy_buf.len() < offset {
+                            return Err(io::Error::new(
+                                io::ErrorKind::InvalidData,
+                                "bad pointer copy in stream"
+                            ));
+                        }
+                        self.copy_buf.push_back(self.copy_buf[self.copy_buf.len() - offset]);
+                    }
+                },
+            }
+        }
+
+        // then, drain the amount of the copy buffer that is necessary to read
+        let bytes_read = std::cmp::min(buf.len(), self.copy_buf.len());
+        let mut cursor = Cursor::new(buf);
+        self.copy_buf.drain(..bytes_read).for_each(|b| { cursor.write_all(&[b]).unwrap(); });
+
+        Ok(bytes_read)
     }
 }
