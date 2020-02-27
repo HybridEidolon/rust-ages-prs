@@ -11,7 +11,8 @@ keywords = ["sega", "modding"]
 categories = ["compression"]
 exclude = [
     "/.travis.yml",
-    ".gitignore"
+    ".gitignore",
+    ".editorconfig"
 ]
 
 [badges]

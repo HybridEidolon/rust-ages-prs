@@ -67,5 +67,10 @@ years.
 
 ## License
 
+`sega-prs` is dual-licensed for compatibility with the rest of the Rust public
+ecosystem.
+
 `sega-prs` is distributed under the terms of both the MIT license and the Apache
 License (Version 2.0).
+
+See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
