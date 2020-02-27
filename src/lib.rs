@@ -72,7 +72,7 @@ use self::flavor::{
     Modern,
 };
 
-pub use self::decompress::Error;
+pub use self::decompress::DecompressError;
 
 /// Compress a buffer using Legacy encoding.
 pub fn compress_legacy<B: AsRef<[u8]>>(buf: B) -> Vec<u8> {
@@ -85,12 +85,18 @@ pub fn compress_modern<B: AsRef<[u8]>>(buf: B) -> Vec<u8> {
 }
 
 /// Decompress a Legacy-encoded buffer.
-pub fn decompress_legacy<B: AsRef<[u8]>>(buf: B) -> Result<Vec<u8>, Error> {
+pub fn decompress_legacy<B>(buf: B) -> Result<Vec<u8>, DecompressError>
+where
+    B: AsRef<[u8]>,
+{
     decompress::<Legacy, B>(buf)
 }
 
 /// Decompress a Modern-encoded buffer.
-pub fn decompress_modern<B: AsRef<[u8]>>(buf: B) -> Result<Vec<u8>, Error> {
+pub fn decompress_modern<B>(buf: B) -> Result<Vec<u8>, DecompressError>
+where
+    B: AsRef<[u8]>,
+{
     decompress::<Modern, B>(buf)
 }
 

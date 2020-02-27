@@ -2,11 +2,13 @@
 
 use crate::flavor::Flavor;
 
+use std::error::Error;
+use std::fmt;
 use std::io::{Read, Cursor};
 
 /// An Error returned during decompression.
 #[derive(Debug)]
-pub enum Error {
+pub enum DecompressError {
     /// Reached end of buffer prematurely
     Eof,
     /// A Pointer command was invalid (not enough written bytes)
@@ -18,10 +20,34 @@ pub enum Error {
         /// The current length of the output buffer
         current_len: usize,
     },
+    #[doc(hidden)]
+    __Nonexhaustive,
 }
 
+impl fmt::Display for DecompressError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            DecompressError::Eof => {
+                write!(f, "Reached end of buffer prematurely")
+            },
+            DecompressError::InvalidPointer { dist, len, current_len } => {
+                write!(
+                    f,
+                    "Invalid pointer command: {} bytes {} away, {} available",
+                    len,
+                    dist,
+                    current_len
+                )
+            },
+            _ => unimplemented!()
+        }
+    }
+}
+
+impl Error for DecompressError {}
+
 /// Decompress a byte buffer, as a particular Flavor.
-pub fn decompress<F, B>(buf: B) -> Result<Vec<u8>, Error>
+pub fn decompress<F, B>(buf: B) -> Result<Vec<u8>, DecompressError>
 where
     F: Flavor,
     B: AsRef<[u8]>,
@@ -29,7 +55,7 @@ where
     decompress_buf::<F>(buf.as_ref())
 }
 
-fn decompress_buf<F: Flavor>(buf: &[u8]) -> Result<Vec<u8>, Error> {
+fn decompress_buf<F: Flavor>(buf: &[u8]) -> Result<Vec<u8>, DecompressError> {
     if buf.is_empty() {
         // empty buffer; return empty result
         return Ok(Vec::new());
@@ -46,7 +72,7 @@ fn decompress_buf<F: Flavor>(buf: &[u8]) -> Result<Vec<u8>, Error> {
             Some(Cmd::Pointer(dist, len)) => {
                 for _ in 0..len {
                     if dist == 0 || out.len() < dist {
-                        return Err(Error::InvalidPointer {
+                        return Err(DecompressError::InvalidPointer {
                             dist,
                             len,
                             current_len: out.len(),
@@ -86,11 +112,11 @@ impl<'a, F> Ctx<'a, F> {
     }
 
     #[inline(always)]
-    fn read_bit(&mut self) -> Result<bool, Error> {
+    fn read_bit(&mut self) -> Result<bool, DecompressError> {
         if self.rem == 0 {
             let mut buf = [0; 1];
             if self.cursor.read_exact(&mut buf).is_err() {
-                return Err(Error::Eof);
+                return Err(DecompressError::Eof);
             }
             self.cmds = buf[0];
             self.rem = 8;
@@ -105,12 +131,12 @@ impl<'a, F> Ctx<'a, F> {
 }
 
 impl<'a, F> Ctx<'a, F> where F: Flavor {
-    fn next_cmd(&mut self) -> Result<Option<Cmd>, Error> {
+    fn next_cmd(&mut self) -> Result<Option<Cmd>, DecompressError> {
         if self.read_bit()? {
             // literal
             let mut buf = [0; 1];
             if self.cursor.read_exact(&mut buf).is_err() {
-                return Err(Error::Eof);
+                return Err(DecompressError::Eof);
             }
             return Ok(Some(Cmd::Literal(buf[0])));
         }
@@ -119,7 +145,7 @@ impl<'a, F> Ctx<'a, F> where F: Flavor {
             // long ptr
             let mut buf = [0; 2];
             let mut offset = match self.cursor.read_exact(&mut buf) {
-                Err(_) => return Err(Error::Eof),
+                Err(_) => return Err(DecompressError::Eof),
                 _ => i16::from_le_bytes(buf) as i32,
             };
 
@@ -133,7 +159,7 @@ impl<'a, F> Ctx<'a, F> where F: Flavor {
             if size == 0 {
                 // next byte is real size
                 size = match self.cursor.read_exact(&mut buf[..1]) {
-                    Err(_) => return Err(Error::Eof),
+                    Err(_) => return Err(DecompressError::Eof),
                     _ => buf[0] as usize,
                 };
                 // it's probably the minimum long-long-copy size
@@ -151,7 +177,7 @@ impl<'a, F> Ctx<'a, F> where F: Flavor {
             let bit = if self.read_bit()? { 1 } else { 0 };
             let size = (bit | (flag << 1)) + 2;
             let offset = match self.cursor.read_exact(&mut buf) {
-                Err(_) => return Err(Error::Eof),
+                Err(_) => return Err(DecompressError::Eof),
                 _ => buf[0] as i32,
             };
             let offset = offset | -256i32;
