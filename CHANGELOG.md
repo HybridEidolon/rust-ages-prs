@@ -8,4 +8,4 @@ and this project adheres to
 
 ## [Unreleased]
 
-Initial implementation. Supports PRS buffers of "Legacy" and "Modern" flavors.
+Initial implementation. Supports PRS streams of "Legacy" and "Modern" variants.

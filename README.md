@@ -4,7 +4,7 @@
 [![Crate](https://img.shields.io/crates/v/sega-prs.svg)](https://crates.io/crates/sega-prs)
 [![API](https://docs.rs/sega-prs/badge.svg)](https://docs.rs/sega-prs)
 
-Routines for compressing and decompressing PRS encoded buffers.
+IO types for compressing and decompressing PRS encoded buffers.
 
 PRS is an LZ77 encoding used by several games made published by SEGA. It is
 mostly used for compressing game assets e.g. textures and game data, and
@@ -33,7 +33,7 @@ Within your code:
 use sega_prs::decompress_legacy;
 
 // unitxt_j.prs contains localized strings used in Phantasy Star Online's UI.
-// PSO uses "legacy" flavor PRS.
+// PSO uses "legacy" variant PRS.
 static UNITXT: &'static [u8] = include_bytes!("./unitxt_j.prs");
 
 fn decompress_unitxt() {
@@ -43,13 +43,13 @@ fn decompress_unitxt() {
 
 ## Games supported
 
-For the "Legacy" flavor:
+For the "Legacy" variant:
 
 - Phantasy Star Online (all versions)
 - Sonic Adventure
 - Sonic Adventure 2
 
-For the "Modern" flavor:
+For the "Modern" variant:
 
 - Phantasy Star Universe
 - Phantasy Star Online 2

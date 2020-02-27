@@ -1,6 +1,6 @@
 //! Decompression of PRS buffers.
 
-use crate::flavor::Flavor;
+use crate::Variant;
 
 use std::error::Error;
 use std::fmt;
@@ -46,22 +46,22 @@ impl fmt::Display for DecompressError {
 
 impl Error for DecompressError {}
 
-/// Decompress a byte buffer, as a particular Flavor.
-pub fn decompress<F, B>(buf: B) -> Result<Vec<u8>, DecompressError>
+/// Decompress a byte buffer, as a particular Variant.
+pub fn decompress<V, B>(buf: B) -> Result<Vec<u8>, DecompressError>
 where
-    F: Flavor,
+    V: Variant,
     B: AsRef<[u8]>,
 {
-    decompress_buf::<F>(buf.as_ref())
+    decompress_buf::<V>(buf.as_ref())
 }
 
-fn decompress_buf<F: Flavor>(buf: &[u8]) -> Result<Vec<u8>, DecompressError> {
+fn decompress_buf<V: Variant>(buf: &[u8]) -> Result<Vec<u8>, DecompressError> {
     if buf.is_empty() {
         // empty buffer; return empty result
         return Ok(Vec::new());
     }
 
-    let mut ctx: Ctx<F> = Ctx::new(buf);
+    let mut ctx: Ctx<V> = Ctx::new(buf);
 
     let mut out = Vec::with_capacity(buf.len().next_power_of_two());
 
@@ -87,11 +87,11 @@ fn decompress_buf<F: Flavor>(buf: &[u8]) -> Result<Vec<u8>, DecompressError> {
     Ok(out)
 }
 
-struct Ctx<'a, F> {
+struct Ctx<'a, V> {
     cursor: Cursor<&'a [u8]>,
     cmds: u8,
     rem: u8,
-    pd: std::marker::PhantomData<F>,
+    pd: std::marker::PhantomData<V>,
 }
 
 // LZ77 commands
@@ -101,8 +101,8 @@ enum Cmd {
     Pointer(usize, usize),
 }
 
-impl<'a, F> Ctx<'a, F> {
-    fn new(src: &'a [u8]) -> Ctx<'a, F> {
+impl<'a, V> Ctx<'a, V> {
+    fn new(src: &'a [u8]) -> Ctx<'a, V> {
         Ctx {
             cursor: Cursor::new(src),
             cmds: 0,
@@ -130,7 +130,7 @@ impl<'a, F> Ctx<'a, F> {
     }
 }
 
-impl<'a, F> Ctx<'a, F> where F: Flavor {
+impl<'a, V> Ctx<'a, V> where V: Variant {
     fn next_cmd(&mut self) -> Result<Option<Cmd>, DecompressError> {
         if self.read_bit()? {
             // literal
@@ -163,7 +163,7 @@ impl<'a, F> Ctx<'a, F> where F: Flavor {
                     _ => buf[0] as usize,
                 };
                 // it's probably the minimum long-long-copy size
-                size += F::MIN_LONG_COPY_LENGTH as usize;
+                size += V::MIN_LONG_COPY_LENGTH as usize;
             } else {
                 size += 2;
             }
