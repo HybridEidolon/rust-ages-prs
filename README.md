@@ -1,5 +1,9 @@
 # sega-prs: PRS de/compression for Rust
 
+[![Build Status](https://travis-ci.org/HybridEidolon/rust-sega-prs.svg?branch=master)](https://travis-ci.org/HybridEidolon/rust-sega-prs)
+[![Crate](https://img.shields.io/crates/v/sega-prs.svg)](https://crates.io/crates/sega-prs)
+[![API](https://docs.rs/sega-prs/badge.svg)](https://docs.rs/sega-prs)
+
 Routines for compressing and decompressing PRS encoded buffers.
 
 PRS is an LZ77 encoding used by several games made published by SEGA. It is
