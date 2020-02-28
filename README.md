@@ -30,21 +30,20 @@ sega-prs = "0.1"
 Within your code:
 
 ```rust
-use std::io::{Cursor, Read};
+use std::io::{self, Cursor, Read};
 use sega_prs::LegacyPrsDecoder;
 
 // unitxt_j.prs contains localized strings used in Phantasy Star Online's UI.
 // PSO uses "legacy" variant PRS.
-static UNITXT: &'static [u8] = include_bytes!("./unitxt_j.prs");
 
-fn decompress_unitxt() {
-    let mut unitxt = Vec::new();
-    let mut decoder = LegacyPrsDecoder::new(
-        File::open("unitxt_j.prs").unwrap(),
-    );
-    decoder.read_to_end(&mut unitxt).unwrap();
-    drop(decoder);
-    println!("{:02x?}", unitxt);
+fn decompress_unitxt() -> io::Result<Vec<u8>> {
+    let mut data = Vec::with_capacity(2048);
+    let file = File::open("unitxt_js.prs")?;
+    let mut decoder = LegacyPrsDecoder::new(file);
+
+    decoder.read_to_end(&mut data)?;
+
+    Ok(data)
 }
 ```
 
