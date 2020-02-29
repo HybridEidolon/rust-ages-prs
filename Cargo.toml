@@ -19,8 +19,4 @@ exclude = [
 travis-ci = { repository = "HybridEidolon/ages-prs" }
 
 [dependencies]
-libflate_lz77 = "0.1"
-
-[patch.crates-io.libflate_lz77]
-git = "https://github.com/HybridEidolon/libflate"
-branch = "lz77-configure-max-length"
+libflate_lz77 = "0.1.1"
