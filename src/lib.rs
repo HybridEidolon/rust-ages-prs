@@ -18,7 +18,7 @@
 //! ```
 //! use std::io::{Cursor, Read, Write};
 //!
-//! use sega_prs::{ModernPrsDecoder, ModernPrsEncoder};
+//! use ages_prs::{ModernPrsDecoder, ModernPrsEncoder};
 //!
 //! let input = b"Hello Hello Hello ";
 //! let mut encoder = ModernPrsEncoder::new(Vec::new());

@@ -1,8 +1,8 @@
-# sega-prs: PRS de/compression for Rust
+# ages-prs: PRS de/compression for Rust
 
-[![Build Status](https://travis-ci.org/HybridEidolon/rust-sega-prs.svg?branch=master)](https://travis-ci.org/HybridEidolon/rust-sega-prs)
-[![Crate](https://img.shields.io/crates/v/sega-prs.svg)](https://crates.io/crates/sega-prs)
-[![API](https://docs.rs/sega-prs/badge.svg)](https://docs.rs/sega-prs)
+[![Build Status](https://travis-ci.org/HybridEidolon/rust-ages-prs.svg?branch=master)](https://travis-ci.org/HybridEidolon/rust-ages-prs)
+[![Crate](https://img.shields.io/crates/v/ages-prs.svg)](https://crates.io/crates/ages-prs)
+[![API](https://docs.rs/ages-prs/badge.svg)](https://docs.rs/ages-prs)
 
 IO types for compressing and decompressing PRS encoded buffers.
 
@@ -24,14 +24,14 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-sega-prs = "0.1"
+ages-prs = "0.1"
 ```
 
 Within your code:
 
 ```rust
 use std::io::{self, Cursor, Read};
-use sega_prs::LegacyPrsDecoder;
+use ages_prs::LegacyPrsDecoder;
 
 // unitxt_j.prs contains localized strings used in Phantasy Star Online's UI.
 // PSO uses "legacy" variant PRS.
@@ -66,10 +66,10 @@ years.
 
 ## License
 
-`sega-prs` is dual-licensed for compatibility with the rest of the Rust public
+`ages-prs` is dual-licensed for compatibility with the rest of the Rust public
 ecosystem.
 
-`sega-prs` is distributed under the terms of both the MIT license and the Apache
+`ages-prs` is distributed under the terms of both the MIT license and the Apache
 License (Version 2.0).
 
 See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.

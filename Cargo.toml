@@ -1,12 +1,12 @@
 [package]
-name = "sega-prs"
+name = "ages-prs"
 description = "Compression and decompression of PRS, SEGA's LZ77 encoding."
 version = "0.1.0"
 authors = ["Eidolon <furyhunter600@gmail.com>"]
 edition = "2018"
 readme = "README.md"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/HybridEidolon/rust-sega-prs"
+repository = "https://github.com/HybridEidolon/rust-ages-prs"
 keywords = ["sega", "modding"]
 categories = ["compression"]
 exclude = [
@@ -16,7 +16,7 @@ exclude = [
 ]
 
 [badges]
-travis-ci = { repository = "HybridEidolon/sega-prs" }
+travis-ci = { repository = "HybridEidolon/ages-prs" }
 
 [dependencies]
 libflate_lz77 = "0.1"
