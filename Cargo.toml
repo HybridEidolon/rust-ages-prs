@@ -16,7 +16,7 @@ exclude = [
 ]
 
 [badges]
-travis-ci = { repository = "HybridEidolon/ages-prs" }
+travis-ci = { repository = "HybridEidolon/rust-ages-prs" }
 
 [dependencies]
 libflate_lz77 = "0.1.1"
