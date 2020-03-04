@@ -8,4 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+Miscellaneous internal improvements.
+
+## [0.1.0]
+
 Initial implementation. Supports PRS streams of "Legacy" and "Modern" variants.
