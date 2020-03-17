@@ -1,6 +1,6 @@
 # ages-prs: PRS de/compression for Rust
 
-![CI](https://github.com/HybridEidolon/rust-ages-prs/workflows/CI/badge.svg)
+[![CI](https://github.com/HybridEidolon/rust-ages-prs/workflows/CI/badge.svg)](https://github.com/HybridEidolon/rust-ages-prs/actions?query=workflow%3ACI)
 [![Crate](https://img.shields.io/crates/v/ages-prs.svg)](https://crates.io/crates/ages-prs)
 [![API](https://docs.rs/ages-prs/badge.svg)](https://docs.rs/ages-prs)
 
