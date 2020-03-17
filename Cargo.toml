@@ -21,3 +21,6 @@ travis-ci = { repository = "HybridEidolon/rust-ages-prs" }
 
 [dependencies]
 libflate_lz77 = "0.1.1"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
